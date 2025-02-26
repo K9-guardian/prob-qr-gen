@@ -42,6 +42,7 @@ class PilImage(qrcode.image.base.BaseImage):
 
         img = Image.new(mode, (self.pixel_size, self.pixel_size), back_color)
         self.fill_color = fill_color
+        self.back_color = back_color
         self._idr = ImageDraw.Draw(img)
         return img
 
@@ -92,14 +93,12 @@ class PilImage(qrcode.image.base.BaseImage):
                 # Draw box with white dot in middle
                 box = self.pixel_box(row, col)
                 small_box = self.small_rect(box, small_box_size, small_box_size)
-                print(box, small_box)
                 self._idr.rectangle(box, fill=self.fill_color)
                 self._idr.rectangle(small_box, fill=self.back_color)
             case (False, _):
                 # Draw black dot in middle
                 box = self.pixel_box(row, col)
                 small_box = self.small_rect(box, small_box_size, small_box_size)
-                print(box, small_box)
                 self._idr.rectangle(small_box, fill=self.fill_color)
 
     def save(self, stream, format=None, **kwargs):

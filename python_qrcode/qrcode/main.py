@@ -231,7 +231,8 @@ class QRCode(Generic[GenericImage]):
                 design_distance = rs_block.total_count - rs_block.data_count + 1
                 tolerance = (design_distance - 1) // 2
 
-                print(f"dd of {design_distance} with tol {tolerance}")
+                if mask_pattern == 1:
+                    print(f"dd of {design_distance} with tol {tolerance}")
 
                 # Find minimal pair between ECs
                 data_ecs = self.data_cache[ec_start:ec_start + ec_count:]
@@ -245,8 +246,10 @@ class QRCode(Generic[GenericImage]):
                     diff = (data_ec ^ fake_ec).bit_count()
                     diffs.append(diff)
 
-                # print("data ecs", data_ecs)
-                # print("fake ecs", fake_ecs)
+                if mask_pattern == 1:
+                    print("data ecs", data_ecs)
+                    print("fake ecs", fake_ecs)
+                    print("diffs", diffs)
 
                 nonzeros = [(diff, idx) for idx, diff in enumerate(diffs) if diff != 0]
                 if not nonzeros:
@@ -270,7 +273,8 @@ class QRCode(Generic[GenericImage]):
                     self.data_cache[ec_start + idx] = self.fake_cache[ec_start + idx]
                 # print("after", self.data_cache)
 
-                print(f"diff {min_diff} at idx {min_idx} for block {j}")
+                if mask_pattern == 1:
+                    print(f"diff {min_diff} at idx {min_idx} for block {j}")
 
         self.map_data(self.data_cache, mask_pattern)
         self.data_cache = old_cache
