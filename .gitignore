@@ -1,14 +1,1 @@
 *.png
-
-python_qrcode/*.pyc
-python_qrcode/.coverage
-python_qrcode/.coverage.*
-python_qrcode/.idea/
-python_qrcode/.pytest_cache/
-python_qrcode/.tox
-python_qrcode/build/
-python_qrcode/cov.xml
-python_qrcode/dist/
-python_qrcode/htmlcov/
-python_qrcode/poetry.lock
-python_qrcode/qrcode.egg-info/
