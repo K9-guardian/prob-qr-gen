@@ -264,8 +264,8 @@ class QRCode(Generic[GenericImage]):
                     self.fake_cache[ec_start + min_idx]
                 )
 
-                random.seed(0)
-                deterministic_errors = random.sample(nonzeros, min(tolerance, len(nonzeros)))
+                rng = random.Random(0)
+                deterministic_errors = rng.sample(nonzeros, min(tolerance, len(nonzeros)))
                 if mask_pattern == 1:
                     print("det errors", [idx for (_, idx) in deterministic_errors])
 
