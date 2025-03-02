@@ -8,7 +8,9 @@ from urllib.parse import urlparse, urlunparse
 import argparse
 
 CHARS = "aeioubmcnsvdfghjklpqrtwxyz0123456789"
-SIZES = (10, 25, 40)
+# PROB_BYTE_RANGE = ((0, 5), (6, 10), (11, 16))
+# PROB_BYTE_RANGE = [(0, 16)]
+PROB_BYTES = (1, 2, 3)
 LUMINANCES = (
     ((0, 0, 0), (255, 255, 255)),
     ((0, 0, 0), (178, 178, 178)),
@@ -32,34 +34,39 @@ def gen_qrs(url: urllib.parse.ParseResult):
         if success:
             break
         for ch in CHARS:
+            if success:
+                break
             if ch == name[i]:
                 continue
-            qr = qrcode.QRCode(
-                error_correction=qrcode.constants.ERROR_CORRECT_M,
-                box_size=40
-            )
-            qr.add_data(urlunparse(url), real=True)
-            new_name = name[:i]+ch+name[i+1:]
-            new_url = f"{url.scheme}://{sub}{new_name}.{tld}"
-            qr.add_data(new_url, real=False)
-            mat = qr.get_matrix()
-            if sum(1 for row in mat for elem in row if isinstance(elem, tuple)) == 1:
+            prob_bits = 0
+            for byte in PROB_BYTES:
+                qr = qrcode.QRCode(
+                    error_correction=qrcode.constants.ERROR_CORRECT_M,
+                    box_size=40,
+                    prob_bytes=byte
+                )
+                qr.add_data(urlunparse(url), real=True)
+                new_name = name[:i]+ch+name[i+1:]
+                new_url = f"{url.scheme}://{sub}{new_name}.{tld}"
+                qr.add_data(new_url, real=False)
+                mat = qr.get_matrix()
+                prob_bits += sum(1 for row in mat for elem in row if isinstance(elem, tuple))
+                qr.clear()
+            if prob_bits <= 6:
                 success = True
                 print(new_url)
-                break
-            qr.clear()
-    
-    for size in SIZES:
-        for i, lum in enumerate(LUMINANCES):
-            qr = qrcode.QRCode(
-                error_correction=qrcode.constants.ERROR_CORRECT_M,
-                box_size=size
-            )
-            qr.add_data(urlunparse(url), real=True)
-            qr.add_data(new_url, real=False)
-            img = qr.make_image(fill_color=lum[0], back_color=lum[1])
-            img.save(f"./dataset/{new_name}-{size}-lum{i}.png")
-
+                for byte in PROB_BYTES:
+                    for i, lum in enumerate(LUMINANCES):
+                        qr = qrcode.QRCode(
+                            error_correction=qrcode.constants.ERROR_CORRECT_M,
+                            box_size=40,
+                            prob_bytes=byte
+                        )
+                        qr.add_data(urlunparse(url), real=True)
+                        qr.add_data(new_url, real=False)
+                        img = qr.make_image(fill_color=lum[0], back_color=lum[1])
+                        img.save(f"./dataset/{new_name}-{byte}-lum{i}.png")
+                        qr.clear()
 
 def main():
     parser = argparse.ArgumentParser()
