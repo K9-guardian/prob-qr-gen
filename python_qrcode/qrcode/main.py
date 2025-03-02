@@ -94,7 +94,7 @@ class QRCode(Generic[GenericImage]):
         border=4,
         image_factory: Optional[Type[GenericImage]] = None,
         mask_pattern=None,
-        prob_bits=1,
+        prob_bytes=1,
     ):
         _check_box_size(box_size)
         _check_border(border)
@@ -106,7 +106,7 @@ class QRCode(Generic[GenericImage]):
         self.border = int(border)
         self.mask_pattern = mask_pattern
         self.image_factory = image_factory
-        self.prob_bits = prob_bits
+        self.prob_bytes = prob_bytes
         if image_factory is not None:
             assert issubclass(image_factory, BaseImage)
         self.clear()
@@ -258,7 +258,7 @@ class QRCode(Generic[GenericImage]):
                     continue
 
                 nonzeros.sort()
-                smallest_nonzeros = nonzeros[0:self.prob_bits]
+                smallest_nonzeros = nonzeros[0:self.prob_bytes]
 
                 for (diff, idx) in smallest_nonzeros:
                     nonzeros.remove((diff, idx))
