@@ -8,12 +8,10 @@ from urllib.parse import urlparse, urlunparse
 import argparse
 
 CHARS = "aeioubmcnsvdfghjklpqrtwxyz0123456789"
-SIZES = (10, 20, 30, 40, 50)
+SIZES = (10, 25, 40)
 LUMINANCES = (
     ((0, 0, 0), (255, 255, 255)),
-    ((0, 0, 0), (216, 216, 216)),
     ((0, 0, 0), (178, 178, 178)),
-    ((0, 0, 0), (139, 139, 139)),
     ((0, 0, 0), (100, 100, 100))
 )
 
