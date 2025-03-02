@@ -94,6 +94,7 @@ class QRCode(Generic[GenericImage]):
         border=4,
         image_factory: Optional[Type[GenericImage]] = None,
         mask_pattern=None,
+        prob_bits=1,
     ):
         _check_box_size(box_size)
         _check_border(border)
@@ -105,6 +106,7 @@ class QRCode(Generic[GenericImage]):
         self.border = int(border)
         self.mask_pattern = mask_pattern
         self.image_factory = image_factory
+        self.prob_bits = prob_bits
         if image_factory is not None:
             assert issubclass(image_factory, BaseImage)
         self.clear()
@@ -255,14 +257,15 @@ class QRCode(Generic[GenericImage]):
                 if not nonzeros:
                     continue
 
-                # print("nonzeros", nonzeros)
-                (min_diff, min_idx) = min(nonzeros)
-                nonzeros.remove((min_diff, min_idx))
+                nonzeros.sort()
+                smallest_nonzeros = nonzeros[0:self.prob_bits]
 
-                self.data_cache[ec_start + min_idx] = (
-                    self.data_cache[ec_start + min_idx],
-                    self.fake_cache[ec_start + min_idx]
-                )
+                for (diff, idx) in smallest_nonzeros:
+                    nonzeros.remove((diff, idx))
+                    self.data_cache[ec_start + idx] = (
+                        self.data_cache[ec_start + idx],
+                        self.fake_cache[ec_start + idx]
+                    )
 
                 rng = random.Random(0)
                 deterministic_errors = rng.sample(nonzeros, min(tolerance, len(nonzeros)))
@@ -275,7 +278,8 @@ class QRCode(Generic[GenericImage]):
                 # print("after", self.data_cache)
 
                 if mask_pattern == 1:
-                    print(f"diff {min_diff} at idx {min_idx} for block {j}")
+                    for (diff, idx) in smallest_nonzeros:
+                        print(f"diff {diff} at idx {idx} for block {j}")
 
         self.map_data(self.data_cache, mask_pattern)
         self.data_cache = old_cache
