@@ -95,6 +95,7 @@ class QRCode(Generic[GenericImage]):
         image_factory: Optional[Type[GenericImage]] = None,
         mask_pattern=None,
         prob_bytes=1,
+        prob_byte_range=(0, 16),
     ):
         _check_box_size(box_size)
         _check_border(border)
@@ -107,6 +108,7 @@ class QRCode(Generic[GenericImage]):
         self.mask_pattern = mask_pattern
         self.image_factory = image_factory
         self.prob_bytes = prob_bytes
+        self.prob_byte_range = prob_byte_range
         if image_factory is not None:
             assert issubclass(image_factory, BaseImage)
         self.clear()
@@ -253,7 +255,7 @@ class QRCode(Generic[GenericImage]):
                     print("fake ecs", fake_ecs)
                     print("diffs", diffs)
 
-                nonzeros = [(diff, idx) for idx, diff in enumerate(diffs) if diff != 0]
+                nonzeros = [(diff, idx) for idx, diff in enumerate(diffs[self.prob_byte_range[0]:self.prob_byte_range[1]]) if diff != 0]
                 if not nonzeros:
                     continue
 
