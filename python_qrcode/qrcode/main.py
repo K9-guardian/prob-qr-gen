@@ -255,7 +255,7 @@ class QRCode(Generic[GenericImage]):
                     print("fake ecs", fake_ecs)
                     print("diffs", diffs)
 
-                nonzeros = [(diff, idx) for idx, diff in enumerate(diffs[self.prob_byte_range[0]:self.prob_byte_range[1]]) if diff != 0]
+                nonzeros = [(diff, idx + self.prob_byte_range[0]) for idx, diff in enumerate(diffs[self.prob_byte_range[0]:self.prob_byte_range[1]]) if diff != 0]
                 if not nonzeros:
                     continue
 
