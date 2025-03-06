@@ -89,14 +89,18 @@ class PilImage(qrcode.image.base.BaseImage):
             case True:
                 box = self.pixel_box(row, col)
                 self._idr.rectangle(box, fill=self.fill_color)
-            case (True, _):
+            case { "real": True }:
                 # Draw box with white dot in middle
+                if qr.debug:
+                    print(f"drawing white in black in ({row}, {col})")
                 box = self.pixel_box(row, col)
                 small_box = self.small_rect(box, small_box_size, small_box_size)
                 self._idr.rectangle(box, fill=self.fill_color)
                 self._idr.rectangle(small_box, fill=self.back_color)
-            case (False, _):
+            case { "real": False }:
                 # Draw black dot in middle
+                if qr.debug:
+                    print(f"drawing black in white in ({row}, {col})")
                 box = self.pixel_box(row, col)
                 small_box = self.small_rect(box, small_box_size, small_box_size)
                 self._idr.rectangle(small_box, fill=self.fill_color)

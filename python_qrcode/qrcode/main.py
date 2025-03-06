@@ -89,6 +89,7 @@ class QRCode(Generic[GenericImage]):
     def __init__(
         self,
         version=None,
+        debug=False,
         error_correction=constants.ERROR_CORRECT_M,
         box_size=10,
         border=4,
@@ -100,6 +101,7 @@ class QRCode(Generic[GenericImage]):
         _check_box_size(box_size)
         _check_border(border)
         self.version = version
+        self.debug = debug
         self.error_correction = int(error_correction)
         self.box_size = int(box_size)
         # Spec says border should be at least four boxes wide, but allow for
@@ -178,14 +180,15 @@ class QRCode(Generic[GenericImage]):
         :param fit: If ``True`` (or if a size has not been provided), find the
             best fit for the data to avoid data overflow errors.
         """
+        debug = self.debug
         if fit or (self.version is None):
             self.best_fit(start=self.version)
         if self.mask_pattern is None:
-            self.makeImpl(False, self.best_mask_pattern())
+            self.makeImpl(False, self.best_mask_pattern(), debug)
         else:
-            self.makeImpl(False, self.mask_pattern)
+            self.makeImpl(False, self.mask_pattern, debug)
 
-    def makeImpl(self, test, mask_pattern):
+    def makeImpl(self, test, mask_pattern, debug=False):
         self.modules_count = self.version * 4 + 17
 
         if self.version in precomputed_qr_blanks:
@@ -220,6 +223,10 @@ class QRCode(Generic[GenericImage]):
         old_cache = self.data_cache.copy()
 
         if len(self.data_list) == len(self.fake_list):
+            def debug_print(*args, **kwargs):
+                if debug:
+                    print(*args, **kwargs)
+
             rs_blocks = base.rs_blocks(self.version, self.error_correction)
 
             for j in range(len(rs_blocks)):
@@ -235,8 +242,7 @@ class QRCode(Generic[GenericImage]):
                 design_distance = rs_block.total_count - rs_block.data_count + 1
                 tolerance = (design_distance - 1) // 2
 
-                if mask_pattern == 1:
-                    print(f"dd of {design_distance} with tol {tolerance}")
+                debug_print(f"dd of {design_distance} with tol {tolerance}")
 
                 # Find minimal pair between ECs
                 data_ecs = self.data_cache[ec_start:ec_start + ec_count:]
@@ -250,10 +256,9 @@ class QRCode(Generic[GenericImage]):
                     diff = (data_ec ^ fake_ec).bit_count()
                     diffs.append(diff)
 
-                if mask_pattern == 1:
-                    print("data ecs", data_ecs)
-                    print("fake ecs", fake_ecs)
-                    print("diffs", diffs)
+                debug_print("data ecs", data_ecs)
+                debug_print("fake ecs", fake_ecs)
+                debug_print("diffs", diffs)
 
                 nonzeros = [
                     (diff, idx + self.prob_byte_range[0])
@@ -277,17 +282,15 @@ class QRCode(Generic[GenericImage]):
 
                 rng = random.Random(0)
                 deterministic_errors = rng.sample(nonzeros, min(tolerance, len(nonzeros)))
-                if mask_pattern == 1:
-                    print("det errors", [idx for (_, idx) in deterministic_errors])
+                debug_print("det errors", [idx for (_, idx) in deterministic_errors])
 
-                # print("before", self.data_cache)
+                # debug_print("before", self.data_cache)
                 for (_, idx) in deterministic_errors:
                     self.data_cache[ec_start + idx] = self.fake_cache[ec_start + idx]
-                # print("after", self.data_cache)
+                # debug_print("after", self.data_cache)
 
-                if mask_pattern == 1:
-                    for (diff, idx) in smallest_nonzeros:
-                        print(f"diff {diff} at idx {idx} for block {j}")
+                for (diff, idx) in smallest_nonzeros:
+                    debug_print(f"diff {diff} at idx {idx} for block {j}")
 
         self.map_data(self.data_cache, mask_pattern)
         self.data_cache = old_cache
