@@ -219,7 +219,7 @@ class QRCode(Generic[GenericImage]):
 
         old_cache = self.data_cache.copy()
 
-        if len(self.data_cache) == len(self.fake_cache):
+        if len(self.data_list) == len(self.fake_list):
             rs_blocks = base.rs_blocks(self.version, self.error_correction)
 
             for j in range(len(rs_blocks)):
