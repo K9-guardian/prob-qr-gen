@@ -7,7 +7,6 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -20,7 +19,7 @@ from qrcode import constants, exceptions, util, base
 from qrcode.image.base import BaseImage
 from qrcode.image.pure import PyPNGImage
 
-ModulesType = List[List[Optional[Union[bool, Tuple[bool]]]]]
+ModulesType = List[List[Optional[Union[bool, Dict[str, bool]]]]]
 # Cache modules generated just based on the QR Code version
 precomputed_qr_blanks: Dict[int, ModulesType] = {}
 
@@ -260,6 +259,7 @@ class QRCode(Generic[GenericImage]):
                 debug_print("fake ecs", fake_ecs)
                 debug_print("diffs", diffs)
 
+                # Only grab non zero diffs from prob_byte_range
                 nonzeros = [
                     (diff, idx + self.prob_byte_range[0])
                     for idx, diff in enumerate(diffs[self.prob_byte_range[0]:self.prob_byte_range[1]])
@@ -271,20 +271,23 @@ class QRCode(Generic[GenericImage]):
                 nonzeros.sort()
                 smallest_nonzeros = nonzeros[0:self.prob_bytes]
 
+                # Grab all non zero diffs for sampling
                 nonzeros = [(diff, idx) for idx, diff in enumerate(diffs) if diff != 0]
 
+                # Set probabilistic errors with smallest_nonzeros
                 for (diff, idx) in smallest_nonzeros:
                     nonzeros.remove((diff, idx))
-                    self.data_cache[ec_start + idx] = (
-                        self.data_cache[ec_start + idx],
-                        self.fake_cache[ec_start + idx]
-                    )
+                    self.data_cache[ec_start + idx] = {
+                        "real": self.data_cache[ec_start + idx],
+                        "fake": self.fake_cache[ec_start + idx]
+                    }
 
                 rng = random.Random(0)
                 deterministic_errors = rng.sample(nonzeros, min(tolerance, len(nonzeros)))
                 debug_print("det errors", [idx for (_, idx) in deterministic_errors])
 
                 # debug_print("before", self.data_cache)
+                # Set deterministic errors with deterministic_errors
                 for (_, idx) in deterministic_errors:
                     self.data_cache[ec_start + idx] = self.fake_cache[ec_start + idx]
                 # debug_print("after", self.data_cache)
@@ -594,15 +597,14 @@ class QRCode(Generic[GenericImage]):
             while True:
                 for c in col_range:
                     if self.modules[row][c] is None:
-                        # TODO: Rewrite this to support probablistic bytes
                         dark = False
 
                         if byteIndex < data_len:
-                            if isinstance(data[byteIndex], tuple):
+                            if isinstance(data[byteIndex], dict):
                                 # While traversing through bytes, need to check for a difference
                                 # and set dark to 'white_in_black or black_in_white'
-                                real_byte = data[byteIndex][0]
-                                fake_byte = data[byteIndex][1]
+                                real_byte = data[byteIndex]["real"]
+                                fake_byte = data[byteIndex]["fake"]
 
                                 real_dark = ((real_byte >> bitIndex) & 1) == 1
                                 fake_dark = ((fake_byte >> bitIndex) & 1) == 1
@@ -610,14 +612,14 @@ class QRCode(Generic[GenericImage]):
                                 if real_dark == fake_dark:
                                     dark = real_dark
                                 else:
-                                    dark = (real_dark, fake_dark)
+                                    dark = { "real": real_dark, "fake": fake_dark }
                             else:
                                 dark = ((data[byteIndex] >> bitIndex) & 1) == 1
 
                         if mask_func(row, c):
                             match dark:
-                                case (p, q):
-                                    dark = (not p, not q)
+                                case { "real": real, "fake": fake }:
+                                    dark = { "real": (not real), "fake": (not fake) }
                                 case b:
                                     dark = not b
 

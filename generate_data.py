@@ -50,7 +50,7 @@ def gen_qrs(url: urllib.parse.ParseResult):
                 new_url = f"{url.scheme}://{sub}{new_name}.{tld}"
                 qr.add_data(new_url, real=False)
                 mat = qr.get_matrix()
-                prob_bits += sum(1 for row in mat for elem in row if isinstance(elem, tuple))
+                prob_bits += sum(1 for row in mat for elem in row if isinstance(elem, dict))
                 qr.clear()
             if prob_bits <= 6:
                 success = True
