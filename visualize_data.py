@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[ ]:
@@ -11,6 +11,7 @@ import pandas as pd
 from pprint import pp
 from tabulate import tabulate
 from IPython.display import display, Math, Latex
+from scipy import stats
 
 
 # In[ ]:
@@ -33,12 +34,28 @@ fake_to_real = {
 # In[ ]:
 
 
+scanner_to_platform = {
+    "Android Camera": "android",
+    "Apple Camera": "apple",
+    "Komorebi": "apple",
+    "Mixinbox QR Code Scanner": "apple",
+    "QR & Barcode Scanner (TeaCapps)": "android",
+    "QR Code Reader: QR Scanner (Anha Ltd)": "android",
+    "QR Scanner (PFA)": "android",
+    "TeaCapps": "apple"
+}
+
+
+# In[ ]:
+
+
 # Read the CSV file into a DataFrame
 df = pd.read_csv('data.csv')
 
 # Cleanup
 df = df.rename(columns={"Brand": "Fake"})
 df.insert(1, 'Real', df['Fake'].map(fake_to_real))
+df['Platform'] = df['Scanner ID'].map(scanner_to_platform)
 
 # Display the DataFrame
 print(df)
@@ -97,14 +114,13 @@ plt.show()
 
 table = {}
 
-grouped = df_comp.groupby(['Scanner ID', 'Real'])
+grouped = df_comp.groupby(['Platform', 'Scanner ID', 'Real'])
 
-for (scanner, url), group in grouped:
-    if scanner not in table:
-        table[scanner] = {}
+for (platform, scanner, url), group in grouped:
+    if (platform, scanner) not in table:
+        table[(platform, scanner)] = {}
     prob_fake = group['Trials'].map(lambda x: (1 - x).mean()).to_numpy().mean()
-    # prob_fake = prob_fake + 1e-10  # Add a small offset to avoid log(0)
-    table[scanner][url] = prob_fake
+    table[(platform, scanner)][url] = prob_fake
 
 # Function to format values (bold if 0.0000)
 def format_value(value):
@@ -119,8 +135,14 @@ s += "\\textbf{Scanner} & \\textbf{amazon} & \\textbf{chatgpt} & \\textbf{facebo
 s += "\\midrule\n"
 
 # Print table rows
-for app, values in table.items():
-    row = [app.replace('&', '\&')]
+for (platform, scanner), values in table.items():
+    match platform:
+        case "apple":
+            prefix = "\\faApple"
+        case "android":
+            prefix = "\\faAndroid"
+
+    row = [prefix + "~" + scanner.replace('&', '\&')]
     for key in ['amazon', 'chatgpt', 'facebook', 'google', 'instagram', 'reddit', 'whatsapp', 'wikipedia', 'yahoo', 'youtube']:
         row.append(format_value(values[key]))
     s += " & ".join(row) + " \\\\\n"
@@ -138,7 +160,77 @@ print(s)
 # In[ ]:
 
 
-# TODO: Investigate why chatgpt and youtube don't follow the rest. Could be localized to a scanner, or based on burst error
+# Table of Mean and CI for Luminosity and Brightness Levels
+
+table = {}
+
+grouped = df_comp.groupby('Luminosity')
+
+for lum, group in grouped:
+    if lum not in table:
+        table[lum] = {}
+    subgrouped = group.groupby('Module Size')
+    for prob_bytes, group in subgrouped:
+        prob_fake = group['Trials'].map(lambda x: (1 - x).mean()).to_numpy()
+
+        # Parameters
+        confidence_level = 0.95  # 95% confidence interval
+        n = len(prob_fake)            # Sample size
+        mean = np.mean(prob_fake)     # Sample mean
+        std_dev = np.std(prob_fake, ddof=1)  # Sample standard deviation (ddof=1 for sample std)
+
+        # Calculate standard error
+        standard_error = std_dev / np.sqrt(n)
+
+        # Determine critical value (t-distribution for small samples, z-distribution for large samples)
+        critical_value = stats.t.ppf((1 + confidence_level) / 2, df=n-1)
+
+        # Calculate margin of error
+        margin_of_error = critical_value * standard_error
+
+        # Calculate confidence interval
+        confidence_interval = (mean - margin_of_error, mean + margin_of_error)
+
+        table[lum][prob_bytes] = (mean, confidence_interval)
+
+# Function to format values (bold if 0.0000)
+def format_value(value):
+    return f"\\textbf{{{value:.4f}}}" if value < 0.05 else f"{value:.4f}"
+
+# Print table header
+s = ""
+s += "\\begin{table}\n"
+s += "\\begin{tabular}{lccc}\n"
+s += "\\toprule\n"
+s += "& \\multicolumn{3}{c}{\\textbf{Probabilistic Bytes}} \\\\\n"
+s += "\\cmidrule(lr){2-4}\n"
+s += "\\textbf{Luminosity} & \\textbf{1} & \\textbf{2} & \\textbf{3} \\\\\n"
+s += "\\midrule\n"
+
+# Print table rows
+for lum, rest in table.items():
+    match lum:
+        case 0:
+            lum_word = "Bright"
+        case 1:
+            lum_word = "Medium"
+        case 2:
+            lum_word = "Dark"
+
+    row = [lum_word]
+    for prob_bytes, value in rest.items():
+        row.append(f'{format_value(value[0])}~({format_value(value[1][0])}, {format_value(value[1][1])})')
+
+    s += " & ".join(row) + " \\\\\n"
+
+# Print table footer
+s += "\\bottomrule\n"
+s += "\\end{tabular}\n"
+s += "\\caption{Mean and 95\\% CI Probabilities of Fake Scans for Luminosity and Probabalistic Bytes.}\n"
+s += "\\label{tab:lum_prob_byte_comp}\n"
+s += "\\end{table}"
+
+print(s)
 
 
 # In[ ]:
@@ -212,6 +304,9 @@ for name, group in grouped:
 # X-axis values (only 3 points)
 x_values = [0, 1, 2]
 
+# X-axis tick labels
+x_labels = ["Bright", "Medium", "Dark"]
+
 # Plotting
 plt.figure(figsize=(10, 6))
 
@@ -219,7 +314,7 @@ for label, values in data.items():
     plt.plot(x_values, values, label=label)
 
 # Set x-axis ticks to only show 0, 1, 2
-plt.xticks(x_values)
+plt.xticks(x_values, x_labels)
 
 # Add labels, title, and legend
 plt.xlabel("Luminosity")
@@ -229,10 +324,4 @@ plt.legend()
 
 # Show the plot
 plt.show()
-
-
-# In[ ]:
-
-
-
 
