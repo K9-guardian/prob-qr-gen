@@ -1,4 +1,4 @@
-Project code for UCSD CSE227 (WI25).
+Computer security project for UCSD CSE227 (WI25).
 
 Usage:
 ```py
