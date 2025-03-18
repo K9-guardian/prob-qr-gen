@@ -341,3 +341,38 @@ plt.legend()
 plt.savefig('visuals/prob_fake_scans_lum.png')
 plt.show()
 
+
+# In[ ]:
+
+
+# Mann-Whitney U rank tests between luminosities and prob byte count
+
+grouped = df_comp.groupby('Luminosity')
+
+print("Comparing overall luminosity distributions")
+for lum_0, group_0 in grouped:
+    for lum_1, group_1 in grouped:
+        if lum_0 < lum_1:
+            print(f'luminosity {lum_0} vs luminosity {lum_1}')
+            prob_fake_0 = group_0['Trials'].map(lambda x: (1 - x).mean()).to_numpy()
+            prob_fake_1 = group_1['Trials'].map(lambda x: (1 - x).mean()).to_numpy()
+            print(stats.mannwhitneyu(prob_fake_0, prob_fake_1))
+
+print()
+grouped = df_comp.groupby('Module Size')
+
+print("Comparing overall prob byte count distributions")
+for prob_byte_count_0, group_0 in grouped:
+    for prob_byte_count_1, group_1 in grouped:
+        if prob_byte_count_0 < prob_byte_count_1:
+            print(f'{prob_byte_count_0} prob bytes vs {prob_byte_count_1} prob bytes')
+            prob_fake_0 = group_0['Trials'].map(lambda x: (1 - x).mean()).to_numpy()
+            prob_fake_1 = group_1['Trials'].map(lambda x: (1 - x).mean()).to_numpy()
+            print(stats.mannwhitneyu(prob_fake_0, prob_fake_1))
+
+
+# In[ ]:
+
+
+
+
