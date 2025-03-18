@@ -91,19 +91,22 @@ urls = df_comp.groupby('Real')
 
 for url, group in urls:
     prob_fake = group['Trials'].map(lambda x: (1 - x).mean()).to_numpy()
-    prob_fake = prob_fake + 1e-10  # Add a small offset to avoid log(0)
+    print(url, np.median(prob_fake))
+    # prob_fake = prob_fake + 1e-10  # Add a small offset to avoid log(0)
     data.append(prob_fake)
     labels.append(url)
 
 # Create the box plot
 plt.figure(figsize=(10, 6))
 plt.boxplot(data, labels=labels)
-plt.title('Probability of Fake Scans between URLs')
+# plt.title('Probability of Fake Scans between URLs')
 plt.xlabel('URL')
 plt.ylabel('Probability Fake')
-plt.yscale('log')
+# plt.yscale('log')
 plt.xticks(rotation=45)  # Rotate labels if they are long
 plt.grid(True)
+
+plt.savefig('visuals/prob_fake_scans_urls.png')
 plt.show()
 
 
@@ -124,11 +127,17 @@ for (platform, scanner, url), group in grouped:
 
 # Function to format values (bold if 0.0000)
 def format_value(value):
-    return f"\\textbf{{{value:.4f}}}" if value < 0.05 else f"{value:.4f}"
+    if value < 0.05:
+        return f"\\color{{red}}{value:.4f}"
+    elif value > 0.5:
+        return f"\\color{{blue}}{value:.4f}"
+    else:
+        return f"{value:.4f}"
 
 # Print table header
 s = ""
-s += "\\begin{table}\n"
+s += "\\begin{table*}\n"
+s += "\\begin{adjustbox}{width=\\textwidth}\n"
 s += "\\begin{tabular}{lccccccccccc}\n"
 s += "\\toprule\n"
 s += "\\textbf{Scanner} & \\textbf{amazon} & \\textbf{chatgpt} & \\textbf{facebook} & \\textbf{google} & \\textbf{instagram} & \\textbf{reddit} & \\textbf{whatsapp} & \\textbf{wikipedia} & \\textbf{yahoo} & \\textbf{youtube} \\\\\n"
@@ -136,6 +145,7 @@ s += "\\midrule\n"
 
 # Print table rows
 for (platform, scanner), values in table.items():
+    print(scanner, np.mean(np.array(list(values.values()))))
     match platform:
         case "apple":
             prefix = "\\faApple"
@@ -147,12 +157,15 @@ for (platform, scanner), values in table.items():
         row.append(format_value(values[key]))
     s += " & ".join(row) + " \\\\\n"
 
+print()
+
 # Print table footer
 s += "\\bottomrule\n"
 s += "\\end{tabular}\n"
-s += "\\caption{Mean Probabilities of Fake Scans of Apps Between URLs}\n"
-s += "\\label{tab:camera_app_performance}\n"
-s += "\\end{table}"
+s += "\\end{adjustbox}\n"
+s += "\\caption{Mean probabilities of fake scans of apps between URLs. Red values are less than 0.05, and blue values are greater than 0.5. Android Camera had the lowest fake scan rate at 0.03, while Apple Camera had the highest fake scan rate 0.44.}\n"
+s += "\\label{tab:mean_prob_fake_scans_url}\n"
+s += "\\end{table*}"
 
 print(s)
 
@@ -195,11 +208,12 @@ for lum, group in grouped:
 
 # Function to format values (bold if 0.0000)
 def format_value(value):
-    return f"\\textbf{{{value:.4f}}}" if value < 0.05 else f"{value:.4f}"
+    return f"{value:.4f}"
 
 # Print table header
 s = ""
-s += "\\begin{table}\n"
+s += "\\begin{table*}\n"
+s += "\\begin{adjustbox}{width=\\textwidth}\n"
 s += "\\begin{tabular}{lccc}\n"
 s += "\\toprule\n"
 s += "& \\multicolumn{3}{c}{\\textbf{Probabilistic Bytes}} \\\\\n"
@@ -226,9 +240,10 @@ for lum, rest in table.items():
 # Print table footer
 s += "\\bottomrule\n"
 s += "\\end{tabular}\n"
-s += "\\caption{Mean and 95\\% CI Probabilities of Fake Scans for Luminosity and Probabalistic Bytes.}\n"
-s += "\\label{tab:lum_prob_byte_comp}\n"
-s += "\\end{table}"
+s += "\\end{adjustbox}\n"
+s += "\\caption{Mean and 95\\% CI for probabilities of fake scans for luminosity and probabilistic bytes  using a student's \\(t\\)-distribution.}\n"
+s += "\\label{tab:mean_ci_fake_scans_prob}\n"
+s += "\\end{table*}"
 
 print(s)
 
@@ -319,9 +334,10 @@ plt.xticks(x_values, x_labels)
 # Add labels, title, and legend
 plt.xlabel("Luminosity")
 plt.ylabel("Probability Fake")
-plt.title("Probability of Fake Scans at Different Luminosities")
+# plt.title("Probability of Fake Scans at Different Luminosities")
 plt.legend()
 
 # Show the plot
+plt.savefig('visuals/prob_fake_scans_lum.png')
 plt.show()
 
