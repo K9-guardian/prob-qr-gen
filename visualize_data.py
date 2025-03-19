@@ -117,13 +117,13 @@ plt.show()
 
 table = {}
 
-grouped = df_comp.groupby(['Platform', 'Scanner ID', 'Real'])
+grouped = df_comp.groupby(['Platform', 'Team Member', 'Scanner ID', 'Real'])
 
-for (platform, scanner, url), group in grouped:
-    if (platform, scanner) not in table:
-        table[(platform, scanner)] = {}
+for (platform, member, scanner, url), group in grouped:
+    if (platform, member, scanner) not in table:
+        table[(platform, member, scanner)] = {}
     prob_fake = group['Trials'].map(lambda x: (1 - x).mean()).to_numpy().mean()
-    table[(platform, scanner)][url] = prob_fake
+    table[(platform, member, scanner)][url] = prob_fake
 
 # Function to format values (bold if 0.0000)
 def format_value(value):
@@ -144,7 +144,7 @@ s += "\\textbf{Scanner} & \\textbf{amazon} & \\textbf{chatgpt} & \\textbf{facebo
 s += "\\midrule\n"
 
 # Print table rows
-for (platform, scanner), values in table.items():
+for (idx, ((platform, _, scanner), values)) in enumerate(table.items()):
     print(scanner, np.mean(np.array(list(values.values()))))
     match platform:
         case "apple":
@@ -156,6 +156,8 @@ for (platform, scanner), values in table.items():
     for key in ['amazon', 'chatgpt', 'facebook', 'google', 'instagram', 'reddit', 'whatsapp', 'wikipedia', 'yahoo', 'youtube']:
         row.append(format_value(values[key]))
     s += " & ".join(row) + " \\\\\n"
+    if idx % 2 == 1 and idx != 7:
+        s += "\\midrule\n"
 
 print()
 
@@ -163,7 +165,7 @@ print()
 s += "\\bottomrule\n"
 s += "\\end{tabular}\n"
 s += "\\end{adjustbox}\n"
-s += "\\caption{Mean probabilities of fake scans of apps between URLs. Red values are less than 0.05, and blue values are greater than 0.5. Android Camera had the lowest fake scan rate at 0.03, while Apple Camera had the highest fake scan rate 0.44.}\n"
+s += "\\caption{Mean probabilities of fake scans of apps between URLs. Each 2 scanner section represents the collective scans of 1 person. Red values are less than 0.05, and blue values are greater than 0.5. Android Camera had the lowest fake scan rate at 0.03, while Apple Camera had the highest fake scan rate 0.44.}\n"
 s += "\\label{tab:mean_prob_fake_scans_url}\n"
 s += "\\end{table*}"
 
