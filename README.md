@@ -19,7 +19,7 @@ img = qr.make_image(debug=True)
 img.save("prob_qr.png")
 ```
 
-The parameters mostly match that of [`qrcode`](https://pypi.org/project/qrcode/).
+The parameters mostly match that of [`python-qrcode`](https://pypi.org/project/qrcode/).
 The new parameters are `prob_bytes`, which controls the number of probabilistic bytes, and `real` in `add_data`, which tells the generator which URL is real and fake.
-These URLs should be 1 character apart to simulate a real Qishing attack.
+These URLs should be 1 character apart to simulate a real [Qishing](https://www.cloudflare.com/learning/security/what-is-quishing/) attack.
 Deterministic changes to the EC segment are chosen randomly as of now, but future work should look into making these changes burst errors to test scanner ability to correct them.
